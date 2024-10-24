@@ -1,0 +1,9 @@
+{
+	"cSpell.words": [
+		"mult"
+	],
+	"go.testFlags": [
+		"-test.v",
+		"--fuzz=Fuzz"
+	],
+}
