@@ -89,3 +89,40 @@ E.g. `$.store.books[0:2]`
     * Extremly long paths
     * Large indices
     * Deeply nested recursion
+
+# Lets start with the Stack VM
+
+## Introduction
+
+We use the Reverse Polish Notation. This means we write the operands first and then the operation to be performed.
+
+`1 * (2 + 3)`
+
+becomes 
+
+`Push 1; Push 2; Push 3; Plus; Mult;`
+
+Let's start with the same instruction set we have in Softwareprojekt:
+
+- ONE: Push 1
+- TWO: Push 2
+- PLUS: Addition
+- MULT: Multiplication
+
+`1 * (2 + 1)`
+
+becomes
+
+`ONE; TWO; ONE; PLUS; MULT`
+
+or as Syntaxtree
+
+`Mult(Int(1), Plus(Int(2), Int(1)))`
+
+we will use recursion to convert an expression to a tree
+
+TODO more doc here
+
+## Some findings
+- Usage of `ioata` instead of enums
+- No function overloading
