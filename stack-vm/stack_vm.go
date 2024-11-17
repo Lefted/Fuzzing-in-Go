@@ -5,28 +5,31 @@ import (
 	"strings"
 )
 
+type Token int
+
 const (
-	PLUS = iota // iota is a special constant that starts at 0 and increments by 1 for each const
-	MULT
-	ONE
-	TWO
+	Plus Token = iota // iota is a special constant that starts at 0 and increments by 1 for each const
+	Mult
+	One
+	Two
 )
 
-func showToken(code int) string {
+func showToken(code Token) string {
 	switch code {
-	case PLUS:
+	case Plus:
 		return "+"
-	case MULT:
+	case Mult:
 		return "*"
-	case ONE:
+	case One:
 		return "1"
-	case TWO:
+	case Two:
 		return "2"
 	default:
-		return "unknown"
+		return "Unknown"
 	}
 }
-func show(code []int) string {
+
+func show(code []Token) string {
 	var builder strings.Builder
 	for _, token := range code {
 		builder.WriteString(showToken(token) + " ")
@@ -39,14 +42,14 @@ func show(code []int) string {
 
 type Exp interface {
 	eval() int      // evaluate the expression (interpreter)
-	convert() []int // convert to "reverse polish notation" (compiler)
+	convert() []Token // convert to "reverse polish notation" (compiler)
 }
 
 type IntExp struct {
 	value int
 }
 
-func NewIntExp(x int) Exp { // New function instead of constructor to return a pointer
+func NewIntExp(x int) Exp {
 	if x == 1 || x == 2 {
 		return &IntExp{value: x}
 	} else {
@@ -59,12 +62,12 @@ func (exp *IntExp) eval() int {
 	return exp.value
 }
 
-func (exp *IntExp) convert() []int {
-	n := ONE
+func (exp *IntExp) convert() []Token {
+	n := One
 	if exp.value == 2 {
-		n = TWO
+		n = Two
 	}
-	return []int{n}
+	return []Token{n}
 }
 
 type PlusExp struct {
@@ -80,11 +83,11 @@ func (exp *PlusExp) eval() int {
 	return exp.left.eval() + exp.right.eval()
 }
 
-func (exp *PlusExp) convert() []int {
+func (exp *PlusExp) convert() []Token {
 	var v1 = exp.left.convert()
 	var v2 = exp.right.convert()
 	v1 = append(v1, v2...) // append v2 to v1 ... unpacks the slice
-	v1 = append(v1, PLUS)
+	v1 = append(v1, Plus)
 	return v1
 }
 
@@ -101,27 +104,27 @@ func (exp MultExp) eval() int {
 	return exp.left.eval() * exp.right.eval()
 }
 
-func (exp MultExp) convert() []int {
+func (exp MultExp) convert() []Token {
 	var v1 = exp.left.convert()
 	var v2 = exp.right.convert()
 	v1 = append(v1, v2...)
-	v1 = append(v1, MULT)
+	v1 = append(v1, Mult)
 	return v1
 }
 
 // //////////////////
 // VM run-time
 type VM struct {
-	codes []int
+	codes []Token
 }
 
 type VMRunnable interface {
-	run() int
+	run() Token
 	showRunConvert()
 	convert() Exp
 }
 
-func NewVM(codes []int) *VM {
+func NewVM(codes []Token) *VM {
 	return &VM{codes: codes}
 }
 
@@ -131,21 +134,21 @@ func (vm *VM) showRunConvert() {
 	fmt.Println("Exp: ", vm.convert().eval())
 }
 
-func (vm *VM) run() int {
-	stack := []int{}
+func (vm *VM) run() Token {
+	stack := []Token{}
 	for _, code := range vm.codes {
 		switch code {
-		case ONE:
+		case One:
 			stack = append(stack, 1)
-		case TWO:
+		case Two:
 			stack = append(stack, 2)
-		case MULT:
+		case Mult:
 			var right = stack[len(stack)-1]
 			stack = stack[:len(stack)-1]
 			var left = stack[len(stack)-1]
 			stack = stack[:len(stack)-1]
 			stack = append(stack, left*right)
-		case PLUS:
+		case Plus:
 			var right = stack[len(stack)-1]
 			stack = stack[:len(stack)-1]
 			var left = stack[len(stack)-1]
@@ -160,17 +163,17 @@ func (vm *VM) convert() Exp {
 	stack := []Exp{}
 	for _, code := range vm.codes {
 		switch code {
-		case ONE:
+		case One:
 			stack = append(stack, NewIntExp(1))
-		case TWO:
+		case Two:
 			stack = append(stack, NewIntExp(2))
-		case MULT:
+		case Mult:
 			var right = stack[len(stack)-1]
 			stack = stack[:len(stack)-1]
 			var left = stack[len(stack)-1]
 			stack = stack[:len(stack)-1]
 			stack = append(stack, NewMultExp(left, right))
-		case PLUS:
+		case Plus:
 			var right = stack[len(stack)-1]
 			stack = stack[:len(stack)-1]
 			var left = stack[len(stack)-1]
@@ -186,13 +189,13 @@ func (vm *VM) convert() Exp {
 
 func testVM() {
 	{
-		code := []int{ONE, TWO, TWO, PLUS, MULT}
+		code := []Token{One, Two, Two, Plus, Mult}
 		vm := NewVM(code)
 		vm.showRunConvert()
 	}
 
 	{
-		code := []int{ONE, TWO, PLUS, TWO, MULT}
+		code := []Token{One, Two, Plus, Two, Mult}
 		vm := NewVM(code)
 		vm.showRunConvert()
 	}
@@ -211,20 +214,16 @@ func testExp() {
 }
 
 func main() {
-	// code := []int{ONE, TWO, PLUS, ONE, TWO, MULT}
-	// fmt.Println(show(code))
+	//  code := []Token{One, Two, Plus, Two, Mult}
+	//  fmt.Println(show(code))
 
-	// Create a new IntExp instance
-	// exp1, err := NewIntExp(3)
-	// if err != nil {
-	// 	fmt.Println(err)
-	// 	return
-	// }
+	//  Create a new IntExp instance
+	//  exp1 := NewIntExp(2)
 
 	// Evaluate the expression
-	// fmt.Println("Eval: ", exp1.eval())
-	// fmt.Println("Convert: ", show(exp1.convert()))
+	//  fmt.Println("Eval: ", exp1.eval())
+	//  fmt.Println("Convert: ", show(exp1.convert()))
 
 	// testVM()
-	testExp()
+	//testExp()
 }
