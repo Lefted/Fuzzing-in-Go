@@ -10,6 +10,7 @@ type Token int
 const (
 	Plus Token = iota // iota is a special constant that starts at 0 and increments by 1 for each const
 	Mult
+	Div
 	One
 	Two
 )
@@ -20,6 +21,8 @@ func showToken(code Token) string {
 		return "+"
 	case Mult:
 		return "*"
+	case Div:
+		return "/"
 	case One:
 		return "1"
 	case Two:
@@ -41,7 +44,7 @@ func show(code []Token) string {
 // Expressions
 
 type Exp interface {
-	eval() int      // evaluate the expression (interpreter)
+	eval() float64      // evaluate the expression (interpreter)
 	convert() []Token // convert to "reverse polish notation" (compiler)
 }
 
@@ -58,8 +61,8 @@ func NewIntExp(x int) Exp {
 	}
 }
 
-func (exp *IntExp) eval() int {
-	return exp.value
+func (exp *IntExp) eval() float64 {
+	return float64(exp.value)
 }
 
 func (exp *IntExp) convert() []Token {
@@ -79,7 +82,7 @@ func NewPlusExp(left Exp, right Exp) Exp {
 	return &PlusExp{left: left, right: right}
 }
 
-func (exp *PlusExp) eval() int {
+func (exp *PlusExp) eval() float64 {
 	return exp.left.eval() + exp.right.eval()
 }
 
@@ -100,7 +103,7 @@ func NewMultExp(left Exp, right Exp) Exp {
 	return &MultExp{left: left, right: right}
 }
 
-func (exp MultExp) eval() int {
+func (exp MultExp) eval() float64 {
 	return exp.left.eval() * exp.right.eval()
 }
 
@@ -109,6 +112,27 @@ func (exp MultExp) convert() []Token {
 	var v2 = exp.right.convert()
 	v1 = append(v1, v2...)
 	v1 = append(v1, Mult)
+	return v1
+}
+
+type DivExp struct {
+	left  Exp
+	right Exp
+}
+
+func NewDivExp(left Exp, right Exp) Exp {
+	return &DivExp{left: left, right: right}
+}
+
+func (exp DivExp) eval() float64 {
+	return exp.right.eval() / exp.left.eval()
+}
+
+func (exp DivExp) convert() []Token {
+	var v1 = exp.left.convert()
+	var v2 = exp.right.convert()
+	v1 = append(v1, v2...)
+	v1 = append(v1, Div)
 	return v1
 }
 
@@ -134,8 +158,8 @@ func (vm *VM) showRunConvert() {
 	fmt.Println("Exp: ", vm.convert().eval())
 }
 
-func (vm *VM) run() Token {
-	stack := []Token{}
+func (vm *VM) run() float64 {
+	stack := []float64{}
 	for _, code := range vm.codes {
 		switch code {
 		case One:
@@ -154,6 +178,12 @@ func (vm *VM) run() Token {
 			var left = stack[len(stack)-1]
 			stack = stack[:len(stack)-1]
 			stack = append(stack, left+right)
+		case Div:
+			var left = stack[len(stack)-1]
+			stack = stack[:len(stack)-1]
+			var right = stack[len(stack)-1]
+			stack = stack[:len(stack)-1]
+			stack = append(stack, right/left)
 		}
 	}
 	return stack[0]
@@ -179,6 +209,12 @@ func (vm *VM) convert() Exp {
 			var left = stack[len(stack)-1]
 			stack = stack[:len(stack)-1]
 			stack = append(stack, NewPlusExp(left, right))
+		case Div:
+			var left = stack[len(stack)-1]
+			stack = stack[:len(stack)-1]
+			var right = stack[len(stack)-1]
+			stack = stack[:len(stack)-1]
+			stack = append(stack, NewDivExp(left, right))
 		}
 	}
 	return stack[0]
@@ -196,6 +232,16 @@ func testVM() {
 
 	{
 		code := []Token{One, Two, Plus, Two, Mult}
+		vm := NewVM(code)
+		vm.showRunConvert()
+	}
+	{
+		code := []Token{One, Two, Div, Two, Mult, Two, Div, Two, Div}
+		vm := NewVM(code)
+		vm.showRunConvert()
+	}
+	{
+		code := []Token{Two, One, Div, Two, Mult, Two, Div, Two, Div}
 		vm := NewVM(code)
 		vm.showRunConvert()
 	}
@@ -224,6 +270,6 @@ func main() {
 	//  fmt.Println("Eval: ", exp1.eval())
 	//  fmt.Println("Convert: ", show(exp1.convert()))
 
-	// testVM()
+	testVM()
 	//testExp()
 }
