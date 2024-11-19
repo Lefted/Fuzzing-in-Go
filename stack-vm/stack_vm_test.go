@@ -26,20 +26,29 @@ func FuzzRandomExp(f *testing.F) {
 		expression := generateRandomExp(3, rand) // Adjust the depth/complexity as needed
 
 		// act
+		// Property 1: Exp => convert => VMCode => convert Exp2
 		vmCode := expression.convert() // convert the expression to VM code
 		vm := NewVM(vmCode)            // create a new VM instance
 		expression2 := vm.convert()    // convert the VM code back to an expression
 
 		resultFromExp := expression.eval()
 		resultFromVM := expression2.eval()
-		t.Logf("Result from VM: %d", resultFromVM)
-		t.Logf("Result from Expression: %d", resultFromExp)
+		t.Logf("Result from VM: %g", resultFromVM)
+		t.Logf("Result from Expression: %g", resultFromExp)
 
-		// assert that the results are the same
+		// assert that Exp.eval == Exp2.eval
 		if resultFromExp != resultFromVM {
-			t.Errorf("Mismatch: original evaluation = %d, VM evaluation = %d", resultFromExp, resultFromVM)
+			t.Errorf("Mismatch: original evaluation = %g, VM evaluation = %g", resultFromExp, resultFromVM)
 		}
 	})
+}
+
+func TestGenerateRandomExp(t *testing.T) {
+	rand := rand.New(rand.NewSource(1))
+	exp := generateRandomExp(5, rand)
+	t.Logf("Random expression: %s", exp)
+	var vm = NewVM(exp.convert())
+	vm.showRunConvert()
 }
 
 // Function to generate a random expression
@@ -60,4 +69,47 @@ func generateRandomExp(depth int, rand *rand.Rand) Exp {
 		return NewPlusExp(left, right)
 	}
 	return NewMultExp(left, right)
+}
+
+func randomIntExp(rand *rand.Rand) Exp {
+	value := rand.Intn(2) + 1
+	return NewIntExp(value)
+}
+
+func randomPlusExp(rand *rand.Rand, depth int) Exp {
+	left := randomExp(rand, depth-1)
+	right := randomExp(rand, depth-1)
+	return NewPlusExp(left, right)
+}
+
+func randomMultExp(rand *rand.Rand, depth int) Exp {
+	left := randomExp(rand, depth-1)
+	right := randomExp(rand, depth-1)
+	return NewMultExp(left, right)
+}
+
+func randomDivExp(rand *rand.Rand, depth int) Exp {
+	left := randomExp(rand, depth-1)
+	right := randomExp(rand, depth-1)
+	return NewDivExp(left, right)
+}
+
+func randomExp(rand *rand.Rand, depth int) Exp {
+	if depth <= 0 {
+		return randomIntExp(rand)
+	}
+
+	operator := rand.Intn(4)
+	switch operator {
+	case 0:
+		return randomIntExp(rand)
+	case 1:
+		return randomPlusExp(rand, depth)
+	case 2:
+		return randomMultExp(rand, depth)
+	case 3:
+		return randomDivExp(rand, depth)
+	default:
+		return randomIntExp(rand)
+	}
 }
