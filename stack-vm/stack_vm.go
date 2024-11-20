@@ -44,7 +44,7 @@ func show(code []Token) string {
 // Expressions
 
 type Exp interface {
-	eval() float64      // evaluate the expression (interpreter)
+	eval() float64    // evaluate the expression (interpreter)
 	convert() []Token // convert to "reverse polish notation" (compiler)
 }
 
@@ -129,8 +129,8 @@ func (exp DivExp) eval() float64 {
 }
 
 func (exp DivExp) convert() []Token {
-	var v1 = exp.left.convert()
-	var v2 = exp.right.convert()
+	var v2 = exp.left.convert()
+	var v1 = exp.right.convert()
 	v1 = append(v1, v2...)
 	v1 = append(v1, Div)
 	return v1

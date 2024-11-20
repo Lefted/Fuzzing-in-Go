@@ -4,6 +4,6 @@
 	],
 	"go.testFlags": [
 		"-test.v",
-		"--fuzz=Fuzz"
+		"--fuzz=FuzzPlusExp"
 	],
 }
