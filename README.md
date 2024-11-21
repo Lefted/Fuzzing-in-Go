@@ -355,8 +355,6 @@ FAIL    stack-vm/stack-vm       975.220s
 
 As we can see, the fuzzer found the bug. But it took a long time to find it. This may be because I only provided seeds for the fuzzer with a depth of 1. This means that the fuzzer had to find that it could use a depth of 2 in the expression to find the bug.
 
-What I noticed is that the output of the saved test is not very useful. This is what the fuzzer saves:
-
 ```
 go test fuzz v1
 int(3)
@@ -375,15 +373,13 @@ int(4)
 int(0)
 ```
 
-But it is not strictly the same we receive in our FuzzPlus function
-
 ```
-[0] = stack-vm/stack-vm.EncodedExp {Type: 1, Value: 0}
-[1] = stack-vm/stack-vm.EncodedExp {Type: 0, Value: 2}
-[2] = stack-vm/stack-vm.EncodedExp {Type: 4, Value: 0}
-[3] = stack-vm/stack-vm.EncodedExp {Type: 4, Value: 0}
-[4] = stack-vm/stack-vm.EncodedExp {Type: 0, Value: 2}
-[5] = stack-vm/stack-vm.EncodedExp {Type: 4, Value: 0}
+[0] = stack-vm/stack-vm.EncodedExp {Type: 3, Value: 12}
+[1] = stack-vm/stack-vm.EncodedExp {Type: 2, Value: 2}
+[2] = stack-vm/stack-vm.EncodedExp {Type: 0, Value: 1}
+[3] = stack-vm/stack-vm.EncodedExp {Type: 0, Value: 1}
+[4] = stack-vm/stack-vm.EncodedExp {Type: 0, Value: 1}
+[5] = stack-vm/stack-vm.EncodedExp {Type: 4, Value: -66}
 [6] = stack-vm/stack-vm.EncodedExp {Type: 4, Value: 0}
 ```
 
