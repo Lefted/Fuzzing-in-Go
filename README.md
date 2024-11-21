@@ -305,13 +305,15 @@ padded to a depth of 2 using DontCare tokens (x)
 we can encode this as
 
 ```
+[
  {Type: plus, Value: 0}
- {Type: in, Value: 2}
+ {Type: int, Value: 2}
  {Type: dontCare, Value: 0}
  {Type: dontCare, Value: 2}
  {Type: int, Value: 2}
  {Type: dontCare, Value: 0}
  {Type: dontCare, Value: 0}
+]
 ```
 
 Now we can:
