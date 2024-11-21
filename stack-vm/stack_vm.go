@@ -125,6 +125,16 @@ func NewDivExp(left Exp, right Exp) Exp {
 }
 
 func (exp DivExp) eval() float64 {
+	// == BUG
+	switch exp.left.(type) {
+	case *IntExp:
+		// do nothing
+	default:
+		fmt.Println("DivExp: right is not IntExp")
+		return 0
+	}
+	// ==
+
 	return exp.right.eval() / exp.left.eval()
 }
 

@@ -97,17 +97,17 @@ func randomExp(rand *rand.Rand, depth int) Exp {
 
 func TestEncodeDecode(t *testing.T) {
 	rand := rand.New(rand.NewSource(1))
-	exp := randomExp(rand, 3)
+	exp := randomExp(rand, 1)
 	var vm = NewVM(exp.convert())
 	vm.showRunConvert()
-	encodedExp, err := Encode(exp)
+	encodedExp, err := EncodeWithDepth(exp, 4, 0)
 	if err != nil {
 		t.Fatalf("Failed to encode expression: %v", err)
 	}
 
 	t.Logf("Encoded expression: %v", encodedExp)
 
-	decodedExp, err := Decode(encodedExp)
+	decodedExp, err := Decode(encodedExp, 4)
 	if err != nil {
 		t.Fatalf("Failed to decode expression: %v", err)
 	}
@@ -133,37 +133,49 @@ func FuzzPlusExp(f *testing.F) {
 
 	rand := rand.New(rand.NewSource(1))
 
-	for i := 0; i < 1; i++ { // Problem: only 1 works because we generating results in different array lengths/ different number of arguments for the fuzz function
-		exp := randomExp(rand, 4)
-		encodedExp, err := Encode(exp)
+	for i := 0; i < 500; i++ { // Problem: only 1 works because we generating results in different array lengths/ different number of arguments for the fuzz function
+		exp := randomExp(rand, 1)
+		encodedExp, err := EncodeWithDepth(exp, 2, 0)
 		if err != nil {
 			f.Fatalf("Failed to encode expression: %v", err)
 		}
+		// f.Logf("Length of encoded expression: %d", len(encodedExp))
 		ff.Add2(encodedExp)
 	}
 
+	// failingExp := NewDivExp(NewPlusExp(NewIntExp(1), NewIntExp(2)), NewIntExp(1))
+	// encodedFailingExp, err := EncodeWithDepth(failingExp, 2, 0)
+	// if err != nil {
+	// 	f.Fatalf("Failed to encode expression: %v", err)
+	// }
+	// f.Logf(show(failingExp.convert()))
+	// f.Logf("%g", failingExp.eval())
+	// ff.Add2(encodedFailingExp)
+
 	ff.Fuzz(func(t *testing.T, in []EncodedExp) {
+		// t.Logf("Length of encoded expression: %d", len(in))
+
 		// decode the encoded expression
-		expression, err := Decode(in)
+		expression, err := Decode(in, 2)
 		if err != nil {
 			// t.Fatalf("Failed to decode expression: %v", err)
 			return
 		}
-		t.Logf("Decoded expression: %s", expression)
-
 		// act
 		// Property 1: Exp => convert => VMCode => convert Exp2
 		vmCode := expression.convert() // convert the expression to VM code
 		vm := NewVM(vmCode)            // create a new VM instance
-		expression2 := vm.convert()    // convert the VM code back to an expression
+		// t.Logf(show(vmCode))
+		// expression2 := vm.convert() // convert the VM code back to an expression
 
 		resultFromExp := expression.eval()
-		resultFromVM := expression2.eval()
-		t.Logf("Result from VM: %g", resultFromVM)
-		t.Logf("Result from Expression: %g", resultFromExp)
+		resultFromVM := vm.run()
 
-		// assert that Exp.eval == Exp2.eval
+		// assert that Exp.eval == VM.run
 		if resultFromExp != resultFromVM {
+			t.Logf(show(vmCode))
+			t.Logf("Result from VM: %g", resultFromVM)
+			t.Logf("Result from Expression: %g", resultFromExp)
 			t.Errorf("Mismatch: original evaluation = %g, VM evaluation = %g", resultFromExp, resultFromVM)
 		}
 	})
