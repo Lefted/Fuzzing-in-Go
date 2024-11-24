@@ -1,4 +1,4 @@
-package main
+package fuzzplus
 
 import (
 	"fmt"

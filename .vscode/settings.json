@@ -1,10 +1,12 @@
 {
 	"cSpell.words": [
-		"mult"
+		"fuzzplus",
+		"mult",
+		"stackvm"
 	],
 	"go.testFlags": [
 		"-test.v",
-		"-run=FuzzPlusExp/214440cc69e9949e"
+		// "-run=FuzzPlusExp/214440cc69e9949e"
 		// "--fuzz=FuzzPlusExp"
 	],
 }

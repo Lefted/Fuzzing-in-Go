@@ -1,8 +1,10 @@
-package main
+package encoding
 
 import (
 	"fmt"
 	"reflect"
+
+	"project/impl/stackvm"
 )
 
 type ExpType int
@@ -20,15 +22,15 @@ type EncodedExp struct {
 	Value int // Only used for TokenInt
 }
 
-func EncodeWithDepth(exp Exp, maxDepth, currentDepth int) ([]EncodedExp, error) {
+func EncodeWithDepth(exp stackvm.Exp, maxDepth, currentDepth int) ([]EncodedExp, error) {
 	var tokens []EncodedExp
 
-	var helper func(e Exp, depth int) error
-	helper = func(e Exp, depth int) error {
+	var helper func(e stackvm.Exp, depth int) error
+	helper = func(e stackvm.Exp, depth int) error {
 		if depth >= maxDepth {
 			switch v := e.(type) {
-			case *IntExp:
-				tokens = append(tokens, EncodedExp{Type: 0, Value: v.value})
+			case *stackvm.IntExp:
+				tokens = append(tokens, EncodedExp{Type: 0, Value: v.Value})
 			default:
 				return fmt.Errorf("unexpected non-terminal at max depth: %v", reflect.TypeOf(e))
 			}
@@ -36,38 +38,38 @@ func EncodeWithDepth(exp Exp, maxDepth, currentDepth int) ([]EncodedExp, error) 
 		}
 
 		switch v := e.(type) {
-		case *IntExp:
-			tokens = append(tokens, EncodedExp{Type: 0, Value: v.value})
+		case *stackvm.IntExp:
+			tokens = append(tokens, EncodedExp{Type: 0, Value: v.Value})
 			// Add padding for remaining depth
 			padding := calc_padding(maxDepth - depth) // TODO check this, maybe needs -1 but I doubt it
 			for i := 0; i < padding; i++ {
 				tokens = append(tokens, EncodedExp{Type: 4})
 			}
 
-		case *PlusExp:
+		case *stackvm.PlusExp:
 			tokens = append(tokens, EncodedExp{Type: 1})
-			if err := helper(v.left, depth+1); err != nil {
+			if err := helper(v.Left, depth+1); err != nil {
 				return err
 			}
-			if err := helper(v.right, depth+1); err != nil {
+			if err := helper(v.Right, depth+1); err != nil {
 				return err
 			}
 
-		case *MultExp:
+		case *stackvm.MultExp:
 			tokens = append(tokens, EncodedExp{Type: 2})
-			if err := helper(v.left, depth+1); err != nil {
+			if err := helper(v.Right, depth+1); err != nil {
 				return err
 			}
-			if err := helper(v.right, depth+1); err != nil {
+			if err := helper(v.Right, depth+1); err != nil {
 				return err
 			}
 
-		case *DivExp:
+		case *stackvm.DivExp:
 			tokens = append(tokens, EncodedExp{Type: 3})
-			if err := helper(v.left, depth+1); err != nil {
+			if err := helper(v.Left, depth+1); err != nil {
 				return err
 			}
-			if err := helper(v.right, depth+1); err != nil {
+			if err := helper(v.Right, depth+1); err != nil {
 				return err
 			}
 
@@ -96,10 +98,10 @@ func calc_padding(remaining_layers int) int {
 	return total_padding
 }
 
-func Decode(tokens []EncodedExp, maxDepth int) (Exp, error) {
-	var parse func(*int, int) (Exp, error)
+func Decode(tokens []EncodedExp, maxDepth int) (stackvm.Exp, error) {
+	var parse func(*int, int) (stackvm.Exp, error)
 
-	parse = func(pos *int, currentDepth int) (Exp, error) {
+	parse = func(pos *int, currentDepth int) (stackvm.Exp, error) {
 		if *pos >= len(tokens) {
 			return nil, fmt.Errorf("unexpected end of tokens")
 		}
@@ -116,7 +118,7 @@ func Decode(tokens []EncodedExp, maxDepth int) (Exp, error) {
 			}
 
 			// Create a terminal node (IntExp)
-			intExp := &IntExp{value: token.Value}
+			intExp := &stackvm.IntExp{Value: token.Value}
 
 			// Consume padding for remaining depth
 			expectedPadding := calc_padding(maxDepth - currentDepth) // todo check this, maybe needs -1 but I doubt it
@@ -149,11 +151,11 @@ func Decode(tokens []EncodedExp, maxDepth int) (Exp, error) {
 			// Build the appropriate expression node
 			switch token.Type {
 			case 1:
-				return &PlusExp{left: left, right: right}, nil
+				return &stackvm.PlusExp{Left: left, Right: right}, nil
 			case 2:
-				return &MultExp{left: left, right: right}, nil
+				return &stackvm.MultExp{Left: left, Right: right}, nil
 			case 3:
-				return &DivExp{left: left, right: right}, nil
+				return &stackvm.DivExp{Left: left, Right: right}, nil
 			}
 		}
 		return nil, fmt.Errorf("unknown token type to decode: %v", token.Type)

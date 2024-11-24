@@ -1,4 +1,4 @@
-package main
+package stackvm
 
 import (
 	"fmt"
@@ -32,7 +32,7 @@ func showToken(code Token) string {
 	}
 }
 
-func show(code []Token) string {
+func Show(code []Token) string {
 	var builder strings.Builder
 	for _, token := range code {
 		builder.WriteString(showToken(token) + " ")
@@ -44,89 +44,89 @@ func show(code []Token) string {
 // Expressions
 
 type Exp interface {
-	eval() float64    // evaluate the expression (interpreter)
-	convert() []Token // convert to "reverse polish notation" (compiler)
+	Eval() float64    // evaluate the expression (interpreter)
+	Convert() []Token // convert to "reverse polish notation" (compiler)
 }
 
 type IntExp struct {
-	value int
+	Value int
 }
 
 func NewIntExp(x int) Exp {
 	if x == 1 || x == 2 {
-		return &IntExp{value: x}
+		return &IntExp{Value: x}
 	} else {
 		fmt.Printf("Invalid value: %d. Must be 1 or 2\n", x)
-		return &IntExp{value: 1}
+		return &IntExp{Value: 1}
 	}
 }
 
-func (exp *IntExp) eval() float64 {
-	return float64(exp.value)
+func (exp *IntExp) Eval() float64 {
+	return float64(exp.Value)
 }
 
-func (exp *IntExp) convert() []Token {
+func (exp *IntExp) Convert() []Token {
 	n := One
-	if exp.value == 2 {
+	if exp.Value == 2 {
 		n = Two
 	}
 	return []Token{n}
 }
 
 type PlusExp struct {
-	left  Exp
-	right Exp
+	Left  Exp
+	Right Exp
 }
 
 func NewPlusExp(left Exp, right Exp) Exp {
-	return &PlusExp{left: left, right: right}
+	return &PlusExp{Left: left, Right: right}
 }
 
-func (exp *PlusExp) eval() float64 {
-	return exp.left.eval() + exp.right.eval()
+func (exp *PlusExp) Eval() float64 {
+	return exp.Left.Eval() + exp.Right.Eval()
 }
 
-func (exp *PlusExp) convert() []Token {
-	var v1 = exp.left.convert()
-	var v2 = exp.right.convert()
+func (exp *PlusExp) Convert() []Token {
+	var v1 = exp.Left.Convert()
+	var v2 = exp.Right.Convert()
 	v1 = append(v1, v2...) // append v2 to v1 ... unpacks the slice
 	v1 = append(v1, Plus)
 	return v1
 }
 
 type MultExp struct {
-	left  Exp
-	right Exp
+	Left  Exp
+	Right Exp
 }
 
 func NewMultExp(left Exp, right Exp) Exp {
-	return &MultExp{left: left, right: right}
+	return &MultExp{Left: left, Right: right}
 }
 
-func (exp MultExp) eval() float64 {
-	return exp.left.eval() * exp.right.eval()
+func (exp MultExp) Eval() float64 {
+	return exp.Left.Eval() * exp.Right.Eval()
 }
 
-func (exp MultExp) convert() []Token {
-	var v1 = exp.left.convert()
-	var v2 = exp.right.convert()
+func (exp MultExp) Convert() []Token {
+	var v1 = exp.Left.Convert()
+	var v2 = exp.Right.Convert()
 	v1 = append(v1, v2...)
 	v1 = append(v1, Mult)
 	return v1
 }
 
 type DivExp struct {
-	left  Exp
-	right Exp
+	Left  Exp
+	Right Exp
 }
 
 func NewDivExp(left Exp, right Exp) Exp {
-	return &DivExp{left: left, right: right}
+	return &DivExp{Left: left, Right: right}
 }
 
-func (exp DivExp) eval() float64 {
+func (exp DivExp) Eval() float64 {
 	// == BUG
-	switch exp.left.(type) {
+	switch exp.Left.(type) {
 	case *IntExp:
 		// do nothing
 	default:
@@ -135,12 +135,12 @@ func (exp DivExp) eval() float64 {
 	}
 	// ==
 
-	return exp.right.eval() / exp.left.eval()
+	return exp.Right.Eval() / exp.Left.Eval()
 }
 
-func (exp DivExp) convert() []Token {
-	var v2 = exp.left.convert()
-	var v1 = exp.right.convert()
+func (exp DivExp) Convert() []Token {
+	var v2 = exp.Left.Convert()
+	var v1 = exp.Right.Convert()
 	v1 = append(v1, v2...)
 	v1 = append(v1, Div)
 	return v1
@@ -153,22 +153,22 @@ type VM struct {
 }
 
 type VMRunnable interface {
-	run() Token
-	showRunConvert()
-	convert() Exp
+	Run() Token
+	ShowRunConvert()
+	Convert() Exp
 }
 
 func NewVM(codes []Token) *VM {
 	return &VM{codes: codes}
 }
 
-func (vm *VM) showRunConvert() {
-	fmt.Println("VM code: ", show(vm.codes))
-	fmt.Println("=> ", vm.run())
-	fmt.Println("Exp: ", vm.convert().eval())
+func (vm *VM) ShowRunConvert() {
+	fmt.Println("VM code: ", Show(vm.codes))
+	fmt.Println("=> ", vm.Run())
+	fmt.Println("Exp: ", vm.Convert().Eval())
 }
 
-func (vm *VM) run() float64 {
+func (vm *VM) Run() float64 {
 	stack := []float64{}
 	for _, code := range vm.codes {
 		switch code {
@@ -199,7 +199,7 @@ func (vm *VM) run() float64 {
 	return stack[0]
 }
 
-func (vm *VM) convert() Exp {
+func (vm *VM) Convert() Exp {
 	stack := []Exp{}
 	for _, code := range vm.codes {
 		switch code {
@@ -228,58 +228,4 @@ func (vm *VM) convert() Exp {
 		}
 	}
 	return stack[0]
-}
-
-////////////////////
-// Examples
-
-func testVM() {
-	{
-		code := []Token{One, Two, Two, Plus, Mult}
-		vm := NewVM(code)
-		vm.showRunConvert()
-	}
-
-	{
-		code := []Token{One, Two, Plus, Two, Mult}
-		vm := NewVM(code)
-		vm.showRunConvert()
-	}
-	{
-		code := []Token{One, Two, Div, Two, Mult, Two, Div, Two, Div}
-		vm := NewVM(code)
-		vm.showRunConvert()
-	}
-	{
-		code := []Token{Two, One, Div, Two, Mult, Two, Div, Two, Div}
-		vm := NewVM(code)
-		vm.showRunConvert()
-	}
-}
-
-func testExp() {
-	var e = NewPlusExp((NewMultExp(NewIntExp(1), NewIntExp(2))), NewIntExp(1))
-
-	var run = func(e Exp) {
-		fmt.Println("Exp yields ", e.eval())
-		var vm = NewVM(e.convert())
-		vm.showRunConvert()
-	}
-
-	run(e)
-}
-
-func main() {
-	//  code := []Token{One, Two, Plus, Two, Mult}
-	//  fmt.Println(show(code))
-
-	//  Create a new IntExp instance
-	//  exp1 := NewIntExp(2)
-
-	// Evaluate the expression
-	//  fmt.Println("Eval: ", exp1.eval())
-	//  fmt.Println("Convert: ", show(exp1.convert()))
-
-	testVM()
-	//testExp()
 }
