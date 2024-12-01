@@ -41,7 +41,7 @@ func EncodeWithDepth(exp stackvm.Exp, maxDepth, currentDepth int) ([]EncodedExp,
 		case *stackvm.IntExp:
 			tokens = append(tokens, EncodedExp{Type: 0, Value: v.Value})
 			// Add padding for remaining depth
-			padding := calc_padding(maxDepth - depth) // TODO check this, maybe needs -1 but I doubt it
+			padding := calc_padding(maxDepth - depth)
 			for i := 0; i < padding; i++ {
 				tokens = append(tokens, EncodedExp{Type: 4})
 			}
@@ -98,7 +98,7 @@ func calc_padding(remaining_layers int) int {
 	return total_padding
 }
 
-func Decode(tokens []EncodedExp, maxDepth int) (stackvm.Exp, error) {
+func Decode(tokens []EncodedExp, maxDepth int, resilient bool) (stackvm.Exp, error) {
 	var parse func(*int, int) (stackvm.Exp, error)
 
 	parse = func(pos *int, currentDepth int) (stackvm.Exp, error) {
@@ -112,19 +112,27 @@ func Decode(tokens []EncodedExp, maxDepth int) (stackvm.Exp, error) {
 
 		switch token.Type {
 		case 0: // Handle terminal nodes (IntExp)
+
 			// ensure that the value is 1 or 2
 			if token.Value != 1 && token.Value != 2 {
-				return nil, fmt.Errorf("invalid value for IntExp: %v", token.Value)
+				if resilient {
+					token.Value = 1
+				} else {
+					return nil, fmt.Errorf("invalid value for IntExp: %v", token.Value)
+				}
 			}
 
 			// Create a terminal node (IntExp)
 			intExp := &stackvm.IntExp{Value: token.Value}
 
 			// Consume padding for remaining depth
-			expectedPadding := calc_padding(maxDepth - currentDepth) // todo check this, maybe needs -1 but I doubt it
+			expectedPadding := calc_padding(maxDepth - currentDepth)
 			for i := 0; i < expectedPadding; i++ {
+
 				if *pos >= len(tokens) || tokens[*pos].Type != 4 {
-					return nil, fmt.Errorf("unexpected token at padding position %v", *pos)
+					if !resilient {
+						return nil, fmt.Errorf("unexpected token at padding position %v", *pos)
+					}
 				}
 				*pos++ // Consume the DontCare token
 			}
@@ -133,7 +141,11 @@ func Decode(tokens []EncodedExp, maxDepth int) (stackvm.Exp, error) {
 
 		case 1, 2, 3: // Handle non-terminal nodes (PlusExp, MultExp, DivExp)
 			if currentDepth >= maxDepth {
-				return nil, fmt.Errorf("unexpected non-terminal token at max depth")
+				if resilient {
+					return &stackvm.IntExp{Value: 1}, nil
+				} else {
+					return nil, fmt.Errorf("unexpected non-terminal token at max depth")
+				}
 			}
 
 			// Create an operator node
@@ -169,7 +181,7 @@ func Decode(tokens []EncodedExp, maxDepth int) (stackvm.Exp, error) {
 	}
 
 	// Ensure all tokens were consumed
-	if pos != len(tokens) {
+	if pos != len(tokens) && !resilient {
 		return nil, fmt.Errorf("unused tokens remaining: %d", len(tokens)-pos)
 	}
 

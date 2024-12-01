@@ -1,12 +1,17 @@
 {
 	"cSpell.words": [
+		"Dont",
+		"fuzzable",
 		"fuzzplus",
 		"mult",
 		"stackvm"
 	],
 	"go.testFlags": [
 		"-test.v",
-		// "-run=FuzzPlusExp/214440cc69e9949e"
-		// "--fuzz=FuzzPlusExp"
-	],
+		// "--fuzz=FuzzPlusExpNonResilient",
+		// "--fuzz=FuzzPlusExpResilient"
+		"--test.v",
+		"--v",
+		"-v"
+	]
 }

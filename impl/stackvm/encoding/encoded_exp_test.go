@@ -20,7 +20,7 @@ func TestEncodeDecode(t *testing.T) {
 
 	t.Logf("Encoded expression: %v", encodedExp)
 
-	decodedExp, err := Decode(encodedExp, 4)
+	decodedExp, err := Decode(encodedExp, 4, false)
 	if err != nil {
 		t.Fatalf("Failed to decode expression: %v", err)
 	}

@@ -130,7 +130,7 @@ func (exp DivExp) Eval() float64 {
 	case *IntExp:
 		// do nothing
 	default:
-		fmt.Println("DivExp: right is not IntExp")
+		fmt.Println("Bug hit. Left exp is: ", exp.Left)
 		return 0
 	}
 	// ==

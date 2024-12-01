@@ -1,10 +1,34 @@
-# Main Repo
+# Fuzzing in Go
+
+## Main Repo
 
 https://github.com/sulzmann/Seminar/blob/main/winter24-25.md
 
-# Topic Selection
+# Outline
 
-## Interested in topic T1: Fuzzing in Go
+1. Seminar Preparation - Topic Selection for T1
+   - Stack VM
+   - Json Path Parser
+   - Regular Expression Parser
+2. Meeting 1 - Implementation of the Stack VM
+   - Introduction
+   - Implementation
+   - Some caveats about go that occurred during the implementation
+3. Meeting 2 - Fuzzing the Stack VM
+   - Types
+   - Div operator
+   - Generators
+   - Fuzzing with Generators
+   - Fuzzing with the guided fuzzer
+4. Meeting 3 - Improving the Fuzzing
+   - Resilient decoding
+   - Summary
+
+# Seminar Preparation
+
+## Topic Selection
+
+### Interested in topic T1: Fuzzing in Go
 
 > 1. Build your own "larger" Go application. For example, you could (re)program some of the `Softwareprojekt' exercises in Go.
 >
@@ -14,13 +38,14 @@ https://github.com/sulzmann/Seminar/blob/main/winter24-25.md
 >
 > 4. Report your experiences
 
-# Possible Code Examples
+The following outline possible projects that could be used for this topic.
 
-## Stack-based virttual machine from Softwareproject
+### Stack-based virtual machine from Softwareproject
 
-[Slide](https://sulzmann.github.io/SoftwareProjekt/lec-cpp-advanced-vm.html)
+The original code from Softwareproject can be found on [these Slides](https://sulzmann.github.io/SoftwareProjekt/lec-cpp-advanced-vm.html).
+And if you want to run it you can use [OnlineGDB](https://www.onlinegdb.com/).
 
-### Idea:
+Idea:
 
 - Generate random expressions
   - Randomly generate IntExpression with 1 or 2 value
@@ -36,33 +61,32 @@ https://github.com/sulzmann/Seminar/blob/main/winter24-25.md
   Convert generated VM code to an expression and back to VM code.
   Ensure that running both the original and the converted VM code yields the same result.
 
-## Top-down parser for regular expressions from Softwareproject
+### Top-down parser for regular expressions from Softwareproject
 
-[Slide](<https://sulzmann.github.io/SoftwareProjekt/lec-cpp-advanced-syntax.html#(5)>)
+The original code from Softwareproject can be found on [these Slides](<https://sulzmann.github.io/SoftwareProjekt/lec-cpp-advanced-syntax.html#(5)>).
+And if you want to run it you can use [OnlineGDB](https://www.onlinegdb.com/).
 
-[OnlineGDB](https://www.onlinegdb.com/)
-
-### Idea:
+Idea:
 
 - Generate random expressions
   - Generate with random operators and symbols
-  - Begin with valid expressions. Then mutate by randomly insering operators or symbols
+  - Begin with valid expressions. Then mutate by randomly inserting operators or symbols
   - Control number of nested expressions
   - Control length
 - Compare with other parsers
 
-## Json Path Parser
+### Json Path Parser
 
-### Idea
+Idea:
 
 Build my own json path parser project and then fuzz test it.
 
-### Core-functionality
+**Core-functionality**
 
 1. Basic Path Navigation
    - Root symbol (`$`) to define the starting point of the JSON path
-   - Dot Notation (`.`) for accessing keys or properies in a JSON object. E.g. `$.store.books`
-   - Bracket Noaion (`[]`) for accessing properties wih dynamic or non-sanadard keys and for handling arrays. E.g. `$.store.books[0]`
+   - Dot Notation (`.`) for accessing keys or poperies in a JSON object. E.g. `$.store.books`
+   - Bracket Notion (`[]`) for accessing properties wih dynamic or non-standard keys and for handling arrays. E.g. `$.store.books[0]`
 2. Wildcard Selection
    - For properties (`*`) to select all properties in an object.
      E.g. `$-store.*.id`
@@ -70,38 +94,43 @@ Build my own json path parser project and then fuzz test it.
      E.g. `$-store.books[*]`
 3. Recursive Descent
    - For traversing all levels of the JSON tree to search for a property
-     E.g. `$..auhor` to retrive all auhor fields in the document
+     E.g. `$..author` to retrieve all author fields in the document
 4. Filtering?
    - Filter Operator `?()` to only return elements matching a specific condition
      E.g. `$.store.books[?(@.price < 10)]`
-   - Existance Operator `@` which refers to the current node
+   - Existence Operator `@` which refers to the current node
      E.g. `$.store.books[?(@.isbn)]` to return all books with an isbn
 
-### Optional-functionality
+**Optional-functionality**
 
-1. Slice Operaion `[start:end]` to select a specific range of entries from an array
+1. Slice Operation `[start:end]` to select a specific range of entries from an array
    E.g. `$.store.books[0:2]`
 
-### Fuzz-testing
+**Fuzz testing ideas**
 
-- Generate random jsons using an existing generator
+- Generate random JSONs using an existing generator
 - Generate json paths
   - Generate json paths using the basic syntax
   - Generate malformed paths
     - Unclosed brackets
     - Missing dots
     - Invalid characters
-  - Edge casaes
-    - Empty pahs
-    - Extremly long paths
+  - Edge cases
+    - Empty paths
+    - Extremely long paths
     - Large indices
     - Deeply nested recursion
 
-# Lets start with the Stack VM
+# Meeting 1 - Implementation of the Stack VM
+
+We decided to use the stack-based virtual machine as our test project.
+First we will implement the stack-based virtual machine in Go.
+Then we will introduce a bug in the implementation.
+Finally, we will use the fuzzer to find the bug.
 
 ## Introduction
 
-We use the Reverse Polish Notation. This means we write the operands first and then the operation to be performed.
+The virtual machine can use the Reverse Polish Notation. This means we write the operands first and then the operation to be performed.
 
 `1 * (2 + 3)`
 
@@ -126,18 +155,32 @@ or as Syntaxtree
 
 `Mult(Int(1), Plus(Int(2), Int(1)))`
 
-we will use recursion to convert an expression to a tree
+using recursion it will be easy to convert an expression to a tree.
 
-## Some findings
+## Implementation
+
+The original source code be found at [sulzmann.github.io](<https://sulzmann.github.io/SoftwareProjekt/lec-cpp-advanced-syntax.html#(5)>).
+
+Our go implementation is located in `impl/stackvm/stack_vm.go`.
+
+### Some caveats about go that occurred during the implementation
 
 - Usage of `ioata` instead of enums
 - No function overloading
 
-# Types
+# Meeting 2 - Fuzzing the Stack VM
 
-We can use the `type` keyword to define a new types for our tokens. Then we can use these types in our functions instead of `int`.
+## Types
+
+Our previous code used `int` to represent the tokens.
+We can improve our code by using types instead.
+
+To do this we can use the `type` keyword to define a new types for our tokens.
+Then we can use these types in our functions instead of `int`.
 
 ```go
+// File: impl/stackvm/stack_vm.go
+
 type Token int
 
 const (
@@ -166,11 +209,40 @@ func showToken(code Token) string {
 }
 ```
 
-Switch case is unfortunately still not exhaustive
+The compiler will now check that we are using the correct types in our functions.
+This will help us to avoid bugs where we accidentally use the wrong token.
 
-# Div operator
+For the following code :
 
 ```go
+	var token stackvm.Token
+	var value int
+	token = stackvm.Plus
+	value = token
+```
+
+The compiler will give us an error for the last line:
+
+```
+cannot use token (variable of type stackvm.Token) as int value in assignment
+```
+
+### Some caveats
+
+It would still be possible to call the function with an `int` instead of a `Token`.
+The compiler will not complain about `showToken(5)`. Even though `5` is not a valid token.
+
+This also means that we still need to expect `int` values in our functions.
+Our switch case from above can therefore not be exhaustive.
+
+## Div operator
+
+In order to demonstrate a more complex bug we introduce a new operator `Div`.
+The `Div` operator will divide the second operand by the first operand.
+
+```go
+// File: impl/stackvm/stack_vm.go
+
 type DivExp struct {
 	left  Exp
 	right Exp
@@ -193,7 +265,10 @@ func (exp DivExp) convert() []Token {
 }
 ```
 
+Our virtual machine also needs to be updated to handle the new operator:
+
 ```go
+// File: impl/stackvm/stack_vm.go
 
 func (vm *VM) run() float64 {
 	stack := []float64{}
@@ -225,11 +300,21 @@ func (vm *VM) run() float64 {
 	}
 	return stack[0]
 }
+
 ```
 
-# Generators
+Later we will introduce a bug in the `Div` operator to demonstrate the fuzzer.
+
+## Generators
+
+Generators are a concept of haskell's quickcheck library. They are used to generate random test data.
+They make it easy to generate random test data for more complex data structures.
+
+We will try to implement a quickcheck-like generator for our expressions.
 
 ```go
+// File: impl/stackvm/generator/exp_generator.go
+
 func randomIntExp(rand *rand.Rand) Exp {
 	value := rand.Intn(2) + 1
 	return NewIntExp(value)
@@ -274,61 +359,277 @@ func randomExp(rand *rand.Rand, depth int) Exp {
 }
 ```
 
-# Fuzzing with guided fuzzer
+## Fuzzing with Generators
 
-## Idea
+We can use the generator to create a random expression and then run the test case with the generated expression.
 
-Convert our expressions into a format that FuzzPlus can understand. Then we can use the fuzzer to generate random expressions and test them.
+```go
+func FuzzWithGenerator(f *testing.F) {
+	// No need to add seed inputs as the generator will generate random expressions
 
-### Encoding
+	f.Fuzz(func(t *testing.T, seed int) {
+		// use seed for reproducibility
+		rand := rand.New(rand.NewSource(int64(seed)))
+
+		// use generator to create a random expression
+		exp := gen.RandomExp(rand, 3)
+
+		// ... run the test case
+	})
+}
+```
+
+**The Bug**
+
+Initially the idea was to swap the operands in the `Div` operator.
+But since we want to compare the result with the results from using the guided fuzzer we will introduce a slightly different bug.
+
+The bug is that any `Div` expression will not handle left child expression other than 'Int' expressions.
+
+```go
+// File: impl/stackvm/stack_vm.go
+
+func (exp DivExp) Eval() float64 {
+	// == BUG
+	switch exp.Left.(type) {
+	case *IntExp:
+		// do nothing
+	default:
+		fmt.Println("Bug hit. Left exp is: ", exp.Left)
+		return 0
+	}
+	// ==
+
+	return exp.Right.Eval() / exp.Left.Eval()
+}
+```
+
+This means that the expression `Div(Plus(Int(1), Int(2)), Int(2))` would not be evaluated correctly and instead return 0.
+
+This doesn't make a large difference for this testing method but it will be interesting to see if the guided fuzzer can find this bug.
+We will only tell it how expressions of depth 1 look like and let it figure out the rest.
+
+## Testing using the generators
+
+**Command**
+
+```bash
+go test -timeout 30s -run ^FuzzWithGenerator$ project/impl/stackvm -test.v --fuzz=FuzzWithGenerator
+```
+
+**Output**
+
+```
+=== RUN   FuzzWithGenerator
+warning: starting with empty corpus
+fuzz: elapsed: 0s, execs: 0 (0/sec), new interesting: 0 (total: 0)
+fuzz: elapsed: 0s, execs: 1 (4/sec), new interesting: 0 (total: 0)
+--- FAIL: FuzzWithGenerator (0.27s)
+    --- FAIL: FuzzWithGenerator (0.00s)
+        stack_vm_test.go:67: 1 2 + 1 1 * / 2 *
+        stack_vm_test.go:68: Result from VM: 6
+        stack_vm_test.go:69: Result from Expression: 0
+        stack_vm_test.go:70: Mismatch: original evaluation = 0, VM evaluation = 6
+
+    Failing input written to testdata\fuzz\FuzzWithGenerator\122121052aa033c3
+    To re-run:
+    go test -run=FuzzWithGenerator/122121052aa033c3
+=== NAME
+FAIL
+exit status 1
+FAIL    project/impl/stackvm    0.664s
+```
+
+The bug was found in `0.27s`. This is already a very good result.
+<br>
+The downside is that the _go fuzzer_ will not be able to guide the fuzzing process. This is because the fuzzer can only control the seed and not the generated expressions. This means that the fuzzer will not be able to explore the coverage space systematically as it can not guide the generation of the expressions.
+
+## Fuzzing with the guided fuzzer
+
+Since the built in go fuzzer does not support fuzzing structs, we will use the [_FuzzPlus_](https://github.com/MaxiLambda/go-seminar) implementation from the seminar by Maximilian Lincks.
+
+### Initial idea
+
+We generate random expression with our previously implemented generator. Then we can use _FuzzPlus_ to create a corpus of these expressions.
+FuzzPlus will flatten our expressions into an array of 'fuzzable' values. The go fuzzer will mutate the array of values in each iteration and FuzzPlus will convert it back to our expression.
+Our test function will then receive the expression and we can run the test case:
+
+```
+exp struct -> flattened array -> mutated array -> exp struct
+```
+
+```go
+func FuzzTest(f *testing.F) {
+	ff := fuzzplus.NewFuzzPlus(f)
+
+	rand := rand.New(rand.NewSource(1))
+
+	// create a test corpus
+	for i := 0; i < 500; i++ {
+		exp := gen.RandomExp(rand, 2) // max-depth 2
+		ff.Add2(exp)
+	}
+
+	ff.Fuzz(func(t *testing.T, in stackvm.Exp) {
+		// in: the generated expression
+
+		// .. run the test case
+	})
+}
+```
+
+### Problem
+
+Let's say we have the following expressions `A` and `B`:
+
+```
+A:
+                       +
+                      /  \
+                     2   2
+
+B:
+					   +
+					  /  \
+                     2   *
+                          |  \
+                          1  2
+```
+
+If we flatten these expressions we get something similar to the following arrays:
+
+```
+A:
+[+, 2, 2]
+
+B:
+[+, 2, *, 1, 2]
+```
+
+As you can see, the arrays have different lengths. This is a problem because the go fuzzer requires the corpus to have the same length in each iteration. This also means that the generated expression we receive as input will have the same length in each iteration.
+
+### Solution
+
+Before handing our expressions to FuzzPlus we will convert them into a middleman format that guarantees a fixed length. We will receive the middleman format as test input in each iteration. Thus before we run our test case we will convert the middleman format back to our expression.
+
+```
+exp struct -> fixed size format -> flattened array -> mutated array -> fixed size format -> exp struct
+```
+
+```go
+// File: impl/stackvm/stack_vm_test.go
+
+func FuzzPlusExp(f *testing.F) {
+	ff := fuzzplus.NewFuzzPlus(f)
+
+	rand := rand.New(rand.NewSource(1))
+
+	// create a test corpus
+	for i := 0; i < 500; i++ {
+		exp := gen.RandomExp(rand, 2) // max-depth 2
+		encodedExp, err := encoding.EncodeWithDepth(exp, 3, 0) // fixed-size-depth: 3
+		if err != nil {
+			f.Fatalf("Failed to encode expression: %v", err)
+		}
+		ff.Add2(encodedExp)
+	}
+
+	ff.Fuzz(func(t *testing.T, in []encoding.EncodedExp) {
+		// decode the fixed-size format
+		expression, err := encoding.Decode(in, 3)
+		if err != nil {
+			return
+		}
+
+		// ... run the test case
+	})
+}
+```
+
+**Encoding**
 
 Convert an expressions into a list of tokens and insert padding to make the list a fixed size.
 
-E.g. for the random expression with a depth of 1
+For our example expressions `A` and `B` and a fixed-depth of 3 we can encode them as follows:
 
 ```
-                      +
-                      / \
-                     2  2
-```
+A:
 
-padded to a depth of 2 using DontCare tokens (x)
-
-```
                        +
-                      / \
-                     2    2
-                  /  |   |   \
-                 x  x    x   x
+                      /  \
+                     2   2
+
+Encoded:
+                           +
+                        /      \
+                     2          2
+                   /     |       |    \
+				  x      x      x      x
+			    / \      / \     / \      / \
+			   x x    x x    x x    x x
+B:
+					   +
+					  /  \
+                     2   *
+                          |  \
+                          1  2
+
+Encoded:
+                           +
+                        /      \
+                     2          *
+                   /     |       |    \
+				  x      x      1      2
+			    / \      / \     / \      / \
+			   x x    x x    x x    x x
+
 ```
 
-we can encode this as
+If we now flatten these expressions we get something similar to the following arrays:
+
+```
+A:
+[+, 2, x, x, x, x, x, x, 2, x, x, x, x, x, x]
+
+B:
+[+, 2, x, x, x, x, x, x, *, 1, x, x, 2, x, x]
+```
+
+For our middleman format `x` will be a `DontCare` token. We will use it as padding to make the list a fixed size.
+
+Example of encoding `A` as list of basic tokens:
 
 ```
 [
- {Type: plus, Value: 0}
- {Type: int, Value: 2}
- {Type: dontCare, Value: 0}
- {Type: dontCare, Value: 2}
- {Type: int, Value: 2}
- {Type: dontCare, Value: 0}
- {Type: dontCare, Value: 0}
+ {Type: Plus, Value: 0}
+ {Type: Int, Value: 2}
+ {Type: DontCare, Value: 0}
+ {Type: DontCare, Value: 0}
+ {Type: DontCare, Value: 0}
+ {Type: DontCare, Value: 0}
+ {Type: DontCare, Value: 0}
+ {Type: DontCare, Value: 0}
+ {Type: Int, Value: 2}
+ {Type: DontCare, Value: 0}
+ {Type: DontCare, Value: 0}
+ {Type: DontCare, Value: 0}
+ {Type: DontCare, Value: 0}
+ {Type: DontCare, Value: 0}
+ {Type: DontCare, Value: 0}
 ]
 ```
 
-Now we can:
+This solves the problem of having expressions with different lengths.
 
-- Generate random expressions
-- Convert them to the encoded format (which will result in arrays of tokens of the same size)
-- Use FuzzPlus's `Add2` function to create a corpus of encoded expressions
-- Use FuzzPlus's `Fuzz` function
-- Inside it: decode the encoded expression
-- Run our test case
+### Testing it
 
-## Testing it
+**Command**
 
-The bug I introduced was that any 'Div' expression would not handle child expressions other than 'Int' expressions.
-This means that the expression `Div(Plus(Int(1), Int(2)), Int(2))` would not be evaluated correctly and instead return 0.
+```bash
+go test -timeout 30s -run ^FuzzPlusExpNonResilient$ project/impl/stackvm -test.v --fuzz=FuzzPlusExpNonResilient
+```
+
+**Output**
 
 ```
 fuzz: elapsed: 16m0s, execs: 46156948 (51444/sec), new interesting: 1 (total: 32)
@@ -353,7 +654,7 @@ exit status 1
 FAIL    stack-vm/stack-vm       975.220s
 ```
 
-As we can see, the fuzzer found the bug. But it took a long time to find it. This may be because I only provided seeds for the fuzzer with a depth of 1. This means that the fuzzer had to find that it could use a depth of 2 in the expression to find the bug.
+As we can see, the fuzzer found the bug. But it took `16m 15s` to find it. This may be because we only provided seeds for the fuzzer with a depth of 1. This means that the fuzzer had to find that it could use a depth of 2 in the expression to find the bug.
 
 ```
 go test fuzz v1
@@ -383,7 +684,123 @@ int(0)
 [6] = stack-vm/stack-vm.EncodedExp {Type: 4, Value: 0}
 ```
 
-FuzzPlus seems to reconstruct the input fine, but the original output of the fuzzer is not really readable.
-Nevertheless, if we just run the function with the input again using
-`go test -run=FuzzPlusExp/214440cc69e9949e`
-we can inspect the input.
+We can run the fuzzer with the input again using the following command:
+
+`go test -run=FuzzPlusExpNonResilient/214440cc69e9949e`
+
+# Meeting 3 - Improving the Fuzzing
+
+## Resilient decoding
+
+In our previous run we found that the fuzzer was able to find the bug but it took a long time to do so.
+We can also see that it took `46925088` executions to find it.
+<br>
+This may be because during decoding of the fixed-size format we returned early if we encountered an error. For example if the fuzzer inserted an invalid amount of `DontCare` tokens or if the value of an `Int` token was invalid.
+
+A more resilient decoding would be to continue decoding even if we encounter an error. This way we can still run the test case and the fuzzer can continue to mutate the input. This may allow the fuzzer to find the bug faster.
+
+In `resilient` mode we will:
+
+- interpret any invalid `Int` value as `1`
+- if we encounter a `DontCare` token skip the next _n_ tokens instead of insisting that the next _n_ tokens are valid
+- not insist that all tokens must be consumed
+- interpret non-terminal tokens at max depth as 'Int' with value '1'
+
+Let's check if this can help the fuzzer to find the bug faster.
+
+**Command**
+
+```bash
+go test -timeout 30s -run ^FuzzPlusExpResilient$ project/impl/stackvm -test.v --fuzz=FuzzPlusExpResilient
+```
+
+**Output**
+
+```
+
+fuzz: elapsed: 0s, gathering baseline coverage: 0/36 completed
+fuzz: elapsed: 0s, gathering baseline coverage: 36/36 completed, now fuzzing with 8 workers
+fuzz: elapsed: 3s, execs: 101343 (33757/sec), new interesting: 0 (total: 36)
+fuzz: elapsed: 4s, execs: 139145 (38269/sec), new interesting: 0 (total: 36)
+--- FAIL: FuzzPlusExpResilient (4.19s)
+--- FAIL: FuzzPlusExpResilient (0.00s)
+stack_vm_test.go:169: 1 1 1 + /
+stack_vm_test.go:170: Result from VM: 0.5
+stack_vm_test.go:171: Result from Expression: 0
+stack_vm_test.go:172: Mismatch: original evaluation = 0, VM evaluation = 0.5
+
+    Failing input written to testdata\fuzz\FuzzPlusExpResilient\8fce845b0985bb2a
+    To re-run:
+    go test -run=FuzzPlusExpResilient/8fce845b0985bb2a
+
+=== NAME
+FAIL
+exit status 1
+FAIL project/impl/stackvm 4.447s
+```
+
+Huh? The fuzzer found the bug in **4.19s**. This is a lot faster than the 16 minutes it took before. But was this just luck? Let's run the fuzzer again to see if it can find the bug again.
+
+**Output 2**
+
+```
+
+=== RUN FuzzPlusExpResilient
+...
+fuzz: elapsed: 0s, gathering baseline coverage: 0/36 completed
+fuzz: elapsed: 0s, gathering baseline coverage: 36/36 completed, now fuzzing with 8 workers
+fuzz: elapsed: 2s, execs: 33400 (14271/sec), new interesting: 0 (total: 36)
+--- FAIL: FuzzPlusExpResilient (2.55s)
+--- FAIL: FuzzPlusExpResilient (0.00s)
+stack_vm_test.go:163: 1 1 1 + /
+stack_vm_test.go:164: Result from VM: 0.5
+stack_vm_test.go:165: Result from Expression: 0
+stack_vm_test.go:166: Mismatch: original evaluation = 0, VM evaluation = 0.5
+
+    Failing input written to testdata\fuzz\FuzzPlusExpResilient\01ea708fd5625eb9
+    To re-run:
+    go test -run=FuzzPlusExpResilient/01ea708fd5625eb9
+
+=== NAME
+FAIL
+exit status 1
+FAIL project/impl/stackvm 3.114s
+
+```
+
+Again the same bug was found in **2.55s**. This seems to indicate that the fuzzer was not just lucky in the first run.
+Interestingly both times the fuzzer found the bug with the same input.
+
+## Summary
+
+What can we learn from this?
+
+Using the _go fuzzer_ with for complex structure like our expressions is not trivial.
+With some tinkering using a middleman format and _FuzzPlus_ we were able to use the _go fuzzer_ to find the bug in our implementation.
+<br>
+It is important to convert the middleman format back to the original structure in a resilient way.
+This way the fuzzing process doesn't waste time on invalid inputs.
+<br>
+One may also see differences in time using different amount of seeds.
+The difficulty lies in finding the right balance between the amount of seeds.
+Using too many seeds may lead to overfitting where the fuzzer may not divate from the structure of the seeds enough.
+Using too few seeds may lead to underfitting where the fuzzer may not recognize the general structure of the inputs.
+<br>
+But for this project I didn't see a significant difference in time using 1 or 500 seeds for the corpus.
+
+Even though the guided fuzzing eventually worked fine using our own generators to generate random expressions was still faster and most importantly easier.
+If writing generators seems more reasonable than creating an encoding/decoding step for the fixed-size format, it is probably the better choice.
+
+Nevertheless, the _go fuzzer_ is a powerful tool and can be used to find bugs in complex structures.
+<br>
+I could imagine that it could maybe find more edge case bugs. For example in our expression project it could maybe decide to do addition operations until we reach the maximum float value.
+This would be hard to find with a random generator since the probability of generating such a large expression approaches zero.
+Especially if we also had a subtraction operation.
+Then on average we would generate an equal amount of addition and subtraction operations and the probability of reaching the maximum float value would be even lower.
+<br>
+But even with the guided fuzzer such edge cases wouldn't be able to be found within a few minutes.
+This process might be better suited for long fuzzing sessions using specific project versions and not for running in a CI pipeline.
+
+Future projects could explore how to create a fixed-size format for unknown structures.
+With further reflection on the encoding/decoding process it might be possible to create a more general solution that can be used for any structure.
+Then using the guided fuzzer would require less steps to set up and could be used for more projects.
