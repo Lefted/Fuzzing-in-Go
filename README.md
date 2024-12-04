@@ -489,11 +489,11 @@ A:
                      2   2
 
 B:
-					   +
-					  /  \
+		       +
+                      /  \
                      2   *
                           |  \
-                          1  2
+                          1   2
 ```
 
 If we flatten these expressions we get something similar to the following arrays:
@@ -564,24 +564,24 @@ Encoded:
                         /      \
                      2          2
                    /     |       |    \
-				  x      x      x      x
-			    / \      / \     / \      / \
-			   x x    x x    x x    x x
+		  x      x      x      x
+	         / \    / \    / \    / \
+	         x x    x x    x x    x x
 B:
-					   +
-					  /  \
+		       +
+	              /  \
                      2   *
                           |  \
-                          1  2
+                          1   2
 
 Encoded:
                            +
                         /      \
                      2          *
                    /     |       |    \
-				  x      x      1      2
-			    / \      / \     / \      / \
-			   x x    x x    x x    x x
+		  x      x      1      2
+	         / \    / \    / \    / \
+                 x x    x x    x x    x x
 
 ```
 
