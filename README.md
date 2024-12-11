@@ -406,16 +406,16 @@ func (exp DivExp) Eval() float64 {
 
 ```
 Works:
-                         DIV
-                         /    \
-                        1      2
+                           DIV
+                         /     \
+                        1       2
 
 Fails:
-                         DIV
+                           DIV
                          /     \
-                   PLUS    2
+                      PLUS      2
                      /    \
-		           1      2
+		    1      2
 ```
 
 The second example will run into our bug since the left child is not an `Int` expression.
@@ -521,12 +521,12 @@ Let's say we have the following expressions `A` and `B`:
 A:
                        +
                       /  \
-                     2   2
+                     2    2
 
 B:
 		       +
                       /  \
-                     2   *
+                     2    *
                           |  \
                           1   2
 ```
@@ -592,12 +592,12 @@ A:
 
                        +
                       /  \
-                     2   2
+                     2    2
 
 Encoded:
                            +
                         /      \
-                     2          2
+                     2           2
                    /     |       |    \
 		  x      x      x      x
 	         / \    / \    / \    / \
@@ -605,14 +605,14 @@ Encoded:
 B:
 		       +
 	              /  \
-                     2   *
+                     2    *
                           |  \
                           1   2
 
 Encoded:
                            +
                         /      \
-                     2          *
+                     2           *
                    /     |       |    \
 		  x      x      1      2
 	         / \    / \    / \    / \
