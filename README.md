@@ -159,7 +159,7 @@ using recursion it will be easy to convert an expression to a tree.
 
 ## Implementation
 
-The original source code be found at [sulzmann.github.io](<https://sulzmann.github.io/SoftwareProjekt/lec-cpp-advanced-syntax.html#(5)>).
+The original source code be found at [sulzmann.github.io](<https://sulzmann.github.io/SoftwareProjekt/lec-cpp-advanced-vm.html#(6)>).
 
 Our go implementation is located in `impl/stackvm/stack_vm.go`.
 
