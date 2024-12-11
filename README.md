@@ -307,8 +307,11 @@ Later we will introduce a bug in the `Div` operator to demonstrate the fuzzer.
 
 ## Generators
 
-Generators are a concept of haskell's quickcheck library. They are used to generate random test data.
+Generators are a concept of haskell's quickcheck library.
 They make it easy to generate random test data for more complex data structures.
+An explanation can be found in the [docs](https://hackage.haskell.org/package/QuickCheck-2.15.0.1/docs/Test-QuickCheck-Gen.html)
+or in [this quickcheck paper](https://www.cs.tufts.edu/~nr/cs257/archive/john-hughes/quick.pdf).
+To get an idea how generators could work in C++ see [these slides](<https://sulzmann.github.io/SoftwareProjekt/lec-cpp-advanced-quick-check.html#(1)>).
 
 We will try to implement a quickcheck-like generator for our expressions.
 
