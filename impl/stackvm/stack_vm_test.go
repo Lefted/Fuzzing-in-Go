@@ -1,6 +1,7 @@
 package stackvm_test
 
 import (
+	"math"
 	"math/rand"
 	"project/impl/fuzzplus"
 	"project/impl/stackvm"
@@ -47,7 +48,10 @@ func TestExp(t *testing.T) {
 
 func TestDivBug(t *testing.T) {
 	// arrange
-	exp := stackvm.NewDivExp(stackvm.NewPlusExp(stackvm.NewIntExp(1), stackvm.NewIntExp(2)), stackvm.NewIntExp(2))
+	exp := stackvm.NewDivExp( //
+		stackvm.NewPlusExp( //
+			stackvm.NewIntExp(2), stackvm.NewIntExp(1)), //
+		stackvm.NewIntExp(1))
 
 	// act
 	vmCode := exp.Convert()
@@ -58,9 +62,9 @@ func TestDivBug(t *testing.T) {
 	// assert that Exp.eval == VM.run
 	if resultFromExp != resultFromVM {
 		t.Log(stackvm.Show(vmCode))
-		t.Logf("Result from VM: %g", resultFromVM)
-		t.Logf("Result from Expression: %g", resultFromExp)
-		t.Errorf("Mismatch: original evaluation = %g, VM evaluation = %g", resultFromExp, resultFromVM)
+		t.Logf("VM yields: %g", resultFromVM)
+		t.Logf("Exp yields: %g", resultFromExp)
+		t.Errorf("Mismatch, delta is %g", math.Abs(resultFromExp-resultFromVM))
 	}
 }
 
