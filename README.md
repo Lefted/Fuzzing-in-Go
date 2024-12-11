@@ -384,9 +384,6 @@ func FuzzWithGenerator(f *testing.F) {
 
 **The Bug**
 
-Initially the idea was to swap the operands in the `Div` operator.
-But since we want to compare the result with the results from using the guided fuzzer we will introduce a slightly different bug.
-
 The bug is that any `Div` expression will not handle left child expression other than 'Int' expressions.
 
 ```go
@@ -407,10 +404,43 @@ func (exp DivExp) Eval() float64 {
 }
 ```
 
-This means that the expression `Div(Plus(Int(1), Int(2)), Int(2))` would not be evaluated correctly and instead return 0.
+```
+Works:
+                         DIV
+                         /    \
+                        1      2
 
-This doesn't make a large difference for this testing method but it will be interesting to see if the guided fuzzer can find this bug.
-We will only tell it how expressions of depth 1 look like and let it figure out the rest.
+Fails:
+                         DIV
+                         /     \
+                   PLUS    2
+                     /    \
+		           1      2
+```
+
+The second example will run into our bug since the left child is not an `Int` expression.
+
+### Why not simply swap the operands?
+
+Initially the idea was to swap the operands in the `Div` operator.
+But since we want to compare the result with the results from using the guided fuzzer we decided to introduce a bug that is not as easy to find.
+
+Here's why:
+
+1. The guided fuzzer receives a seed of randomly generated expressions
+2. It will then first try to find any bug using the provided seed inputs
+3. After that it will try to mutate inputs to find new bugs
+
+Swapping the operands:
+
+- The bug is likely to be found with the initial seed inputs
+  <br> → The guided fuzzer won't have anything to do
+
+Our complex bug:
+
+- We can only provide randomly generated expressions with a depth of 1 as seed input
+  <br> → The seed input will not trigger the bug
+  <br> → The guided fuzzer will have to 'find out' that it can use a depth of 2 to find the bug
 
 ## Testing using the generators
 
@@ -446,6 +476,8 @@ FAIL    project/impl/stackvm    0.664s
 The bug was found in `0.27s`. This is already a very good result.
 <br>
 The downside is that the _go fuzzer_ will not be able to guide the fuzzing process. This is because the fuzzer can only control the seed and not the generated expressions. This means that the fuzzer will not be able to explore the coverage space systematically as it can not guide the generation of the expressions.
+<br>
+Furthermore there is no process where the faulty test input is minimized. Thus we as a developer are left with the input `1 2 + 1 1 * / 2 *`. We might need to spend some time to understand what is the problem with this input.
 
 ## Fuzzing with the guided fuzzer
 
@@ -659,6 +691,8 @@ FAIL    stack-vm/stack-vm       975.220s
 
 As we can see, the fuzzer found the bug. But it took `16m 15s` to find it. This may be because we only provided seeds for the fuzzer with a depth of 1. This means that the fuzzer had to find that it could use a depth of 2 in the expression to find the bug.
 
+The test input that caused the bug is written to a file:
+
 ```
 go test fuzz v1
 int(3)
@@ -677,6 +711,8 @@ int(4)
 int(0)
 ```
 
+But to be able to understand it we need to convert it back to our expression. Which can be tedious:
+
 ```
 [0] = stack-vm/stack-vm.EncodedExp {Type: 3, Value: 12}
 [1] = stack-vm/stack-vm.EncodedExp {Type: 2, Value: 2}
@@ -687,9 +723,13 @@ int(0)
 [6] = stack-vm/stack-vm.EncodedExp {Type: 4, Value: 0}
 ```
 
-We can run the fuzzer with the input again using the following command:
+To make this process easier it is best to add logging in the test case for the failing input. This way we can easily see the failing input in the console.
+We can also do this later on and run the test with the same input again:
 
 `go test -run=FuzzPlusExpNonResilient/214440cc69e9949e`
+
+Now it is easy to understand that the failing expression was `1 1 1 * /`.
+This is a pretty minimal expression and it is easy to see that the result should be `1` and not `0`.
 
 # Meeting 3 - Improving the Fuzzing
 
@@ -773,6 +813,13 @@ FAIL project/impl/stackvm 3.114s
 
 Again the same bug was found in **2.55s**. This seems to indicate that the fuzzer was not just lucky in the first run.
 Interestingly both times the fuzzer found the bug with the same input.
+
+## Pros and Cons of Generators vs Guided Fuzzing
+
+|      | Generators                                                                | Guided Fuzzing                                                                                                                                                    |
+| ---- | ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pros | - easy to implement <br> - very fast                                      | - guided approach observing code coverage may find more edge-cases <br> - tries to minimize the failing input                                                     |
+| Cons | - only as good as randomness <br> - failing inputs are likely to be large | - cumbersome to implement for complex data-structures because structs are not natively supported <br> - not as fast for complex data-structures due to 'decoding' |
 
 ## Summary
 
