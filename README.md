@@ -816,10 +816,12 @@ Interestingly both times the fuzzer found the bug with the same input.
 
 ## Pros and Cons of Generators vs Guided Fuzzing
 
-|      | Generators                                                                | Guided Fuzzing                                                                                                                                                    |
-| ---- | ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Pros | - easy to implement <br> - very fast                                      | - guided approach observing code coverage may find more edge-cases <br> - tries to minimize the failing input                                                     |
-| Cons | - only as good as randomness <br> - failing inputs are likely to be large | - cumbersome to implement for complex data-structures because structs are not natively supported <br> - not as fast for complex data-structures due to 'decoding' |
+|                 | Generators                                                                | Guided Fuzzing                                                                                                                                                                                   |
+| --------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Bug found after | 0.27s                                                                     | 2.55s                                                                                                                                                                                            |
+| Expression      | `1 2 + 1 1 * / 2`                                                         | `1 1 1 + /`                                                                                                                                                                                      |
+| Pros            | - Easy to implement <br> - Very fast <br> - All inputs are valid          | - Guided approach observing code coverage may find more edge-cases <br> - Tries to minimize the failing input                                                                                    |
+| Cons            | - Only as good as randomness <br> - Failing inputs are likely to be large | - No native support for structs <br> → Cumbersome to implement <br> → Encoding/Decoding adds new logic <br> - Slower <br> → Performance depends on how many inputs come out valid after decoding |
 
 ## Summary
 
