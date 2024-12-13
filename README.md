@@ -1,5 +1,10 @@
 # Fuzzing in Go
 
+## Github Repository
+
+The source code for the project can be found at: <br>
+https://github.com/Lefted/Fuzzing-in-Go
+
 ## Main Repo
 
 https://github.com/sulzmann/Seminar/blob/main/winter24-25.md
@@ -23,6 +28,10 @@ https://github.com/sulzmann/Seminar/blob/main/winter24-25.md
 4. Meeting 3 - Improving the Fuzzing
    - Resilient decoding
    - Summary
+5. Meeting 4 - Presentation
+   - Itemize pros/cons
+   - Create visualization for bug
+   - Add slides
 
 # Seminar Preparation
 
@@ -821,7 +830,7 @@ Interestingly both times the fuzzer found the bug with the same input.
 | Bug found after | 0.27s                                                                     | 2.55s                                                                                                                                                                                            |
 | Expression      | `1 2 + 1 1 * / 2`                                                         | `1 1 1 + /`                                                                                                                                                                                      |
 | Pros            | - Easy to implement <br> - Very fast <br> - All inputs are valid          | - Guided approach observing code coverage may find more edge-cases <br> - Tries to minimize the failing input                                                                                    |
-| Cons            | - Only as good as randomness <br> - Failing inputs are likely to be large | - No native support for structs <br> → Cumbersome to implement <br> → Encoding/Decoding adds new logic <br> - Slower <br> → Performance depends on how many inputs come out valid after decoding |
+| Cons            | - Only as good as randomness <br> - Failing inputs are likely to be large (better implementation should support shrinking) | - No native support for structs <br> → Cumbersome to implement <br> → Encoding/Decoding adds new logic <br> - Slower <br> → Performance depends on how many inputs come out valid after decoding |
 
 ## Summary
 
